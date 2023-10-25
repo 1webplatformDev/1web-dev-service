@@ -1,17 +1,14 @@
-import { Controller, Get, Header, Res, StreamableFile } from '@nestjs/common';
-import { FileService } from './file.service';
-import type { Response } from 'express';
- 
+import { Controller, Get, Header, StreamableFile } from "@nestjs/common";
+import { FileService } from "./file.service";
 
-@Controller('file')
+@Controller("file")
 export class FileController {
-  constructor(private readonly fileService: FileService) { }
+  constructor(private readonly fileService: FileService) {}
   @Get()
-  @Header('Content-Type', 'application/sql')
-  @Header('Content-Disposition', 'attachment; filename="test.sql"')
-  getFile(@Res({ passthrough: true }) res: Response): StreamableFile {
+  @Header("Content-Type", "application/sql")
+  @Header("Content-Disposition", 'attachment; filename="test.sql"')
+  getFile(): StreamableFile {
     const name = "test2.sql";
-    const file = this.fileService.createFile(name, "select * from test");
-    return file;
+    return this.fileService.createFile(name, "select * from test");
   }
 }
