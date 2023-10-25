@@ -1,6 +1,12 @@
 import { Injectable, StreamableFile } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { createReadStream, writeFileSync } from "fs";
+import {
+  createReadStream,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from "fs";
 
 @Injectable()
 export class FileService {
@@ -12,5 +18,31 @@ export class FileService {
     writeFileSync(pathFile, content);
     const file = createReadStream(pathFile);
     return new StreamableFile(file);
+  }
+  getFileContent(path: string) {
+    return readFileSync(path, { encoding: "utf8" });
+  }
+
+  getPathFilesRecursion(dir: string, files_params = [], type?: string) {
+    let file: string[] = files_params;
+    const files = readdirSync(dir);
+    for (const item in files) {
+      const name = dir + "/" + files[item];
+
+      if (statSync(name).isDirectory()) {
+        file = this.getPathFilesRecursion(name, file, type);
+        continue;
+      }
+
+      if (!type) {
+        file.push(name);
+        continue;
+      }
+
+      if (name.slice(name.lastIndexOf(".") + 1, name.length) == type) {
+        file.push(name);
+      }
+    }
+    return file;
   }
 }

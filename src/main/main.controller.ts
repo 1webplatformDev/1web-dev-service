@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Get, Header, Post } from "@nestjs/common";
 import { MainService } from "./main.service";
 import { ReportPlanTextInterface } from "./interface/reportPlanText.interface";
 import { ReportPlanTextDto } from "./dto/reportPlanText.dto";
@@ -10,5 +10,11 @@ export class MainController {
   @Post("reportPlanText")
   reportPlanText(@Body() body: ReportPlanTextDto): ReportPlanTextInterface {
     return this.mainService.reportPlanText(body.content);
+  }
+  @Get("generatorSql")
+  @Header("Content-Type", "application/sql")
+  @Header("Content-Disposition", 'attachment; filename="all.sql"')
+  generatorSql() {
+    return this.mainService.joinRepositoryFile();
   }
 }
