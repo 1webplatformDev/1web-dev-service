@@ -30,24 +30,32 @@ export class MainService {
 
     const generatorSql = (paths: string[]) => {
       for (const path of paths) {
+        // файл уже был скопирован
         if (filesAdd[path]) {
           continue;
         }
+
         const content = this.fileService.getFileContent(path);
         const reg = new RegExp("references [\\w.]*", "gi");
         const arrayFK = content.match(reg);
+
+        // зависимостей у таблицы нет
         if (arrayFK == null) {
           filesAdd[path] = true;
           result.push(content);
           continue;
         }
+
         for (const elem of arrayFK) {
           const keyFileAdd = `${catalog}/${elem
-            .slice(11)
-            .replaceAll(".", "/")}.sql`;
+            .slice(11) // убрать строку references
+            .replaceAll(".", "/")}.sql`; // заменить . на / пример public.text на public/text - что бы добрать до файла
+
+          // файл уже был скопирован
           if (filesAdd[keyFileAdd]) {
             continue;
           }
+
           generatorSql([keyFileAdd]);
         }
       }
