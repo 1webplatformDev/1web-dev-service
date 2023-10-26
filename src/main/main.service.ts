@@ -22,6 +22,9 @@ export class MainService {
     return result;
   }
 
+  /**
+   * TODO ошибка вначале нужно иницилизировать все схемы а потом уже другие файлы
+   */
   public joinRepositoryFile() {
     const catalog: string = this.configService.get("CATALOG_SQL_REPOSITORY");
     const paths = this.fileService.getPathFilesRecursion(catalog, [], "sql");
