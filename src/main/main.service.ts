@@ -22,9 +22,6 @@ export class MainService {
     return result;
   }
 
-  /**
-   * TODO ошибка вначале нужно иницилизировать все схемы а потом уже другие файлы
-   */
   public joinRepositoryFile() {
     const catalog: string = this.configService.get("CATALOG_SQL_REPOSITORY");
     const paths = this.fileService.getPathFilesRecursion(catalog, [], "sql");
@@ -63,7 +60,11 @@ export class MainService {
         }
       }
     };
-    generatorSql(paths);
+    const pathArrayIndex = paths.filter(
+      (path: string) => path.indexOf("index.sql") != -1,
+    );
+    generatorSql(pathArrayIndex); // прогнать вначале файлы генерации схем
+    generatorSql(paths); // прогнать все остальное
     return this.fileService.createFile("generator_sql.sql", result.join("\n"));
   }
 }
