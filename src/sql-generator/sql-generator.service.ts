@@ -2,40 +2,19 @@ import { Injectable } from "@nestjs/common";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
+import {
+  templateComment,
+  templateDeclareCheckId,
+  templateFunction,
+  templateFunctionCheckId,
+  templateFunctionFilter,
+  templateParamsFunctionIdAndError,
+  templateReturnFilter,
+  templateTable,
+} from "./template/sql-generator";
 
 @Injectable()
 export class SqlGeneratorService {
-  public generatorTable(schema: string, name: string, columnTable: string) {
-    return `drop table if exists ${schema}.${name} cascade; \ncreate table ${schema}.${name} (\n\t${columnTable}\n);`;
-  }
-  public generatorComment(
-    type: string,
-    schema: string,
-    name: string,
-    columnName: string = null,
-    comment: string,
-  ) {
-    if (columnName) {
-      return `comment on ${type} ${schema}.${name}.${columnName} is (${comment});`;
-    }
-    return `comment on ${type} ${schema}.${name} is (${comment});`;
-  }
-  public generatorFunction(
-    schema: string,
-    name: string,
-    params: string,
-    code: string,
-  ) {
-    return `drop function if exists ${schema}.${name};
-create or replace function ${schema}.${name}(\n${params}\n)
-\tlanguage plpgsql
-\tas $function$
-\tbegin
-\t\t${code}
-\tend;
-\t$function$;`;
-  }
-
   private generatorColumn(
     schema: string,
     table: string,
@@ -86,12 +65,12 @@ create or replace function ${schema}.${name}(\n${params}\n)
   ) {
     const result = [];
     result.push(
-      this.generatorComment("table", schema, table.name, null, table.comment),
+      templateComment("table", schema, table.name, null, table.comment),
     );
     result.push(""); // перенос строки из за join("\n");
     for (const column of table.column) {
       result.push(
-        this.generatorComment(
+        templateComment(
           "column",
           schema,
           table.name,
@@ -103,6 +82,108 @@ create or replace function ${schema}.${name}(\n${params}\n)
     return result.join("\n");
   }
 
+  private aiColumnGet(columns: SqlGeneratorTableColumnInterface[]) {
+    return columns.filter(
+      (column: SqlGeneratorTableColumnInterface) => column.ai,
+    )[0];
+  }
+  public generatorFunctionCheckId(body: SqlGeneratorDto) {
+    const aiColumn = this.aiColumnGet(body.table.column);
+
+    const code = templateFunctionCheckId(
+      `${body.schema.name}.${body.table.name}`,
+      aiColumn.name,
+    );
+    return templateFunction(
+      body.schema.name,
+      `${body.table.name}_check_id`,
+      templateParamsFunctionIdAndError(),
+      code,
+      templateDeclareCheckId(aiColumn.error404.id),
+      "json",
+    );
+  }
+  public generatorFilterParameter(body: SqlGeneratorDto) {
+    const getParameter = (
+      name: string,
+      type: string,
+      aliasNameTable: string,
+    ) => {
+      return {
+        paramsString: `_${name} ${type} = null`,
+        whereString: `(${aliasNameTable}.${name} = ${name} or ${name} is null)`,
+      };
+    };
+    const aliasNameTable = this.aliasNameTable(body.table.name);
+    const where: string[] = [];
+    const params: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ignoreFilter) {
+        continue;
+      }
+
+      if (column.ai) {
+        const { paramsString, whereString } = getParameter(
+          `no_${column.name}`,
+          column.type,
+          aliasNameTable,
+        );
+        params.push(paramsString);
+        where.push(whereString);
+      }
+      const { paramsString, whereString } = getParameter(
+        column.name,
+        column.type,
+        aliasNameTable,
+      );
+      params.push(paramsString);
+      where.push(whereString);
+    }
+    params.push("_limit int = null");
+    params.push("_offset int = null");
+    return { where, params };
+  }
+
+  public generatorFunctionFilter(body: SqlGeneratorDto) {
+    const { params, where } = this.generatorFilterParameter(body);
+    return templateFunction(
+      body.schema.name,
+      `${body.table.name}_get_filter`,
+      `\t${params.join(",\n\t")}`,
+      templateFunctionFilter(
+        body.schema.name,
+        body.table.name,
+        this.aliasNameTable(body.table.name),
+        where.join("\n\t\t\t\tand"),
+      ),
+      null,
+      templateReturnFilter(`${body.schema.name}.${body.table.name}`),
+    );
+  }
+
+  public aliasNameTable(name: string) {
+    const result = [];
+    let index = -1;
+    for (const char of name) {
+      index++;
+      if (char == "_") {
+        result.push(name[index + 1]);
+      }
+    }
+    return result.join("");
+  }
+
+  public generatorTempFunction(body: SqlGeneratorDto) {
+    const result = [];
+    if (body.function.filter) {
+      result.push(this.generatorFunctionFilter(body));
+    }
+    if (body.function.check_id) {
+      result.push(this.generatorFunctionCheckId(body));
+    }
+    return result;
+  }
+
   public generatorSql(body: SqlGeneratorDto) {
     const result = [];
     const { resultUi, resultCol } = this.generatorColumn(
@@ -110,7 +191,7 @@ create or replace function ${schema}.${name}(\n${params}\n)
       body.table.name,
       body.table.column,
     );
-    const table = this.generatorTable(
+    const table = templateTable(
       body.schema.name,
       body.table.name,
       resultCol.join("\n\t"),
@@ -121,7 +202,8 @@ create or replace function ${schema}.${name}(\n${params}\n)
     );
     result.push(table + "\n\n");
     result.push(resultUi.join("\n") + "\n\n");
-    result.push(commentTable);
+    result.push(commentTable + "\n\n");
+    result.push(this.generatorTempFunction(body).join("\n\n"));
     return result.join("");
   }
 }

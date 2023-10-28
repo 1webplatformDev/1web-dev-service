@@ -16,7 +16,7 @@ export class SqlGeneratorController {
     @Body() body: SqlGeneratorDto,
     @Res() response: Response,
   ) {
-    const nameFile = `${body.schema.name}${body.table.name}.sql;`;
+    const nameFile = `generator-${body.schema.name}.${body.table.name}.sql;`;
     response.setHeader("Content-Type", "application/sql");
     response.setHeader(
       "Content-Disposition",
