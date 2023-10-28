@@ -25,6 +25,9 @@ export class SqlGeneratorTableColumnInterface {
   ignoreFilter: boolean;
 
   @ApiProperty()
+  ui?: boolean;
+
+  @ApiProperty()
   uiError?: SqlGeneratorErrorInterface;
 
   @ApiProperty()

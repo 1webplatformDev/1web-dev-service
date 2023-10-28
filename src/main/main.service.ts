@@ -58,6 +58,8 @@ export class MainService {
 
           generatorSql([keyFileAdd]);
         }
+        filesAdd[path] = true;
+        result.push(content);
       }
     };
     const pathArrayIndex = paths.filter(
@@ -65,6 +67,9 @@ export class MainService {
     );
     generatorSql(pathArrayIndex); // прогнать вначале файлы генерации схем
     generatorSql(paths); // прогнать все остальное
-    return this.fileService.createFile("generator_sql.sql", result.join("\n"));
+    return this.fileService.createFileGetStream(
+      "generator_sql.sql",
+      result.join("\n"),
+    );
   }
 }
