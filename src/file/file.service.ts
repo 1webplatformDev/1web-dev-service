@@ -12,15 +12,22 @@ import {
 export class FileService {
   constructor(private configService: ConfigService) {}
 
-  createFile(name: string, content: string): StreamableFile {
+  private getPathFile(name: string) {
     const catalog = this.configService.get<string>("TEMP_CATALOG");
-    const pathFile = `${catalog}${name}`;
-    writeFileSync(pathFile, content);
+    return `${catalog}${name}`;
+  }
+  createFileGetStream(name: string, content: string): StreamableFile {
+    const pathFile = this.getPathFile(name);
+    this.createFile(pathFile, content);
     const file = createReadStream(pathFile);
     return new StreamableFile(file);
   }
   getFileContent(path: string) {
     return readFileSync(path, { encoding: "utf8" });
+  }
+
+  createFile(pathFile: string, content: string) {
+    writeFileSync(pathFile, content, { encoding: "utf-8" });
   }
 
   getPathFilesRecursion(dir: string, files_params = [], type?: string) {
