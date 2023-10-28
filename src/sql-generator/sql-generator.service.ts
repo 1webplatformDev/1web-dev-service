@@ -178,8 +178,12 @@ export class SqlGeneratorService {
     if (body.function.filter) {
       result.push(this.generatorFunctionFilter(body));
     }
+
     if (body.function.check_id) {
       result.push(this.generatorFunctionCheckId(body));
+    }
+
+    if (body.function.check_ui) {
     }
     return result;
   }

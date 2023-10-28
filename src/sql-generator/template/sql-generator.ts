@@ -9,6 +9,7 @@ export function templateFunctionCheckId(
 \t\t\tselect * into result_ from public.create_error_ids(array[error_id], 404);
 \t\tend if;`;
 }
+
 export function templateFunctionFilter(
   schema: string,
   table: string,
@@ -24,6 +25,7 @@ export function templateFunctionFilter(
 export function templateParamsFunctionIdAndError() {
   return `\tin _id int4,\n\tout result_ json`;
 }
+
 export function templateFunction(
   schema: string,
   name: string,
@@ -63,9 +65,35 @@ export function templateTable(
 ) {
   return `drop table if exists ${schema}.${name} cascade;\ncreate table ${schema}.${name} (\n\t${columnTable}\n);`;
 }
+
 export function templateDeclareCheckId(id: number) {
   return `\n\t\tcheck_rows int;\n\t\terror_id int = ${id};`;
 }
+
 export function templateReturnFilter(name: string) {
   return `setof ${name}`;
+}
+
+export function templateFunctionUI(code: string) {
+  return `
+${code}
+\t\tif array_length(error_array, 1) <> 0 then
+\t\t\tselect * into errors_ from public.create_error_ids(error_array, 400);
+\t\t\treturn;
+\t\tend if;
+
+\t\tselect * into errors_ from public.create_error_json(null, 200);`;
+}
+
+export function templateFunctionUIItem(
+  functions: string,
+  column: string,
+  aiColumnName: string,
+) {
+  return `
+\t\tselect count(*) into count_${column} 
+\t\tfrom ${functions}_get_filter(_${column} => _${column}, _no_${aiColumnName} => _${aiColumnName});
+\n\t\tif count_${column} <> 0 then
+\t\t\terror_array = array_append(error_array, error_id_${column});
+\t\tend if;\n`;
 }
