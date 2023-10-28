@@ -10,7 +10,7 @@ export class SqlGeneratorTableColumnInterface {
   type: string;
 
   @ApiProperty()
-  notNull: string;
+  notNull: boolean;
 
   @ApiProperty()
   default: string | boolean | number;

@@ -8,6 +8,6 @@ export class SqlGeneratorTableInterface {
   @ApiProperty()
   comment: string;
 
-  @ApiProperty()
+  @ApiProperty({ isArray: true, type: SqlGeneratorTableColumnInterface })
   column: SqlGeneratorTableColumnInterface[];
 }
