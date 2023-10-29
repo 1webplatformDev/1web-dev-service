@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
@@ -8,6 +8,8 @@ import {
   templateFunction,
   templateFunctionCheckId,
   templateFunctionFilter,
+  templateFunctionUI,
+  templateFunctionUIItem,
   templateParamsFunctionIdAndError,
   templateReturnFilter,
   templateTable,
@@ -173,6 +175,50 @@ export class SqlGeneratorService {
     return result.join("");
   }
 
+  public generatorCheckUI(body: SqlGeneratorDto) {
+    const aiColumn = this.aiColumnGet(body.table.column);
+    const code: string[] = [];
+    const declareValue: string[] = [];
+    const declareValueErrors: string[] = [];
+    const params: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ui) {
+        params.push(`in _${column.name} ${column.type}`);
+        declareValue.push(`count_${column.name}`);
+        declareValueErrors.push(
+          `error_id_${column.name} int = ${column.uiError.id}`,
+        );
+        code.push(
+          templateFunctionUIItem(
+            `${body.schema.name}.${body.table.name}`,
+            column.name,
+            aiColumn.name,
+          ),
+        );
+      }
+    }
+    if (code.length) {
+      params.push(`in _${aiColumn.name} ${aiColumn.type} = null`);
+      params.push("out errors_ json");
+      const declareAll = [
+        ...declareValue,
+        ...declareValueErrors,
+        "error_array int[];",
+      ];
+      return templateFunction(
+        body.schema.name,
+        `${body.table.name}_check_ui`,
+        `\t${params.join(",\n\t")}`,
+        templateFunctionUI(code.join("")),
+        `\n\t\t${declareAll.join(";\n\t\t")}`,
+      );
+    }
+    throw new HttpException(
+      "обязательные поля не были найдены уберите флаг check_ui",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
   public generatorTempFunction(body: SqlGeneratorDto) {
     const result = [];
     if (body.function.filter) {
@@ -184,6 +230,7 @@ export class SqlGeneratorService {
     }
 
     if (body.function.check_ui) {
+      result.push(this.generatorCheckUI(body));
     }
     return result;
   }
@@ -205,7 +252,11 @@ export class SqlGeneratorService {
       body.table,
     );
     result.push(table + "\n\n");
-    result.push(resultUi.join("\n") + "\n\n");
+
+    if (resultUi.length) {
+      result.push(resultUi.join("\n") + "\n\n");
+    }
+
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
     return result.join("");
