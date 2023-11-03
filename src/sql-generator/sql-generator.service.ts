@@ -8,6 +8,8 @@ import {
   templateFunction,
   templateFunctionCheckId,
   templateFunctionFilter,
+  templateFunctionInsert,
+  templateFunctionRunCheckId,
   templateFunctionUI,
   templateFunctionUIItem,
   templateParamsFunctionIdAndError,
@@ -219,6 +221,46 @@ export class SqlGeneratorService {
     );
   }
 
+  public generatorRunCheckId(body: SqlGeneratorDto) {
+    const result: string[] = [];
+    for (const column of body.table.column) {
+      if (column.FK && column.FK.funCheck) {
+        result.push(
+          templateFunctionRunCheckId(
+            `${body.schema.name}.${body.table.name}`,
+            column.name,
+          ),
+        );
+      }
+    }
+    return result.join("\n\n\t\t");
+  }
+
+  public generatorInsert(body: SqlGeneratorDto) {
+    const result: string[] = [];
+    result.push(this.generatorRunCheckId(body));
+    const insertInfo: string[] = [];
+    const insertValues: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ai) {
+        continue;
+      }
+      insertValues.push(column.name);
+      insertInfo.push(`_${column.name}`);
+    }
+    return templateFunction(
+      body.schema.name,
+      `${body.table.name}_insert`,
+      `${this.generatorInParams(body)}\n\tout id_ int,\n\tout result_ json`,
+      `\n\t\t${result.join("")} \n${templateFunctionInsert(
+        `${body.schema.name}.${body.table.name}`,
+        insertInfo.join(", "),
+        insertValues.join(", "),
+      )}`,
+      "",
+    );
+  }
+
   public generatorTempFunction(body: SqlGeneratorDto) {
     const result = [];
     if (body.function.filter) {
@@ -232,9 +274,29 @@ export class SqlGeneratorService {
     if (body.function.check_ui) {
       result.push(this.generatorCheckUI(body));
     }
+
+    if (body.function.insert) {
+      result.push(this.generatorInsert(body));
+    }
+
     return result;
   }
 
+  public generatorInParams(body: SqlGeneratorDto) {
+    const result: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ai) {
+        continue;
+      }
+
+      result.push(`in _${column.name} ${column.type}`);
+
+      if (column.default) {
+        result[result.length - 1] += ` = ${column.default}`;
+      }
+    }
+    return `\t${result.join(",\n\t")}`;
+  }
   public generatorSql(body: SqlGeneratorDto) {
     const result = [];
     const { resultUi, resultCol } = this.generatorColumn(

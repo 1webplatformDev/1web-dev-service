@@ -97,3 +97,21 @@ export function templateFunctionUIItem(
 \t\t\terror_array = array_append(error_array, error_id_${column});
 \t\tend if;\n`;
 }
+
+export function templateFunctionRunCheckId(
+  nameFun: string,
+  nameParams: string,
+) {
+  return `select * into result_ from ${nameFun}_check_id(_id => ${nameParams});
+\t\tif (result_::json->'status_result')::text::int = 404 then
+\t\t\treturn;
+\t\tend if;`;
+}
+
+export function templateFunctionInsert(
+  name: string,
+  column: string,
+  values: string,
+) {
+  return `\n\t\tinsert into ${name} (${column}) \n\t\tvalues (${values})\n\t\treturning id into id_;`;
+}
