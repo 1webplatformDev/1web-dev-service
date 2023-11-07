@@ -3,6 +3,7 @@ import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
 import {
+  templateCheckStatus,
   templateComment,
   templateDeclareCheckId,
   templateFunction,
@@ -10,6 +11,7 @@ import {
   templateFunctionFilter,
   templateFunctionInsert,
   templateFunctionRunCheckId,
+  templateFunctionRunCheckUI,
   templateFunctionUI,
   templateFunctionUIItem,
   templateParamsFunctionIdAndError,
@@ -19,6 +21,9 @@ import {
 
 @Injectable()
 export class SqlGeneratorService {
+  /**
+   * генерация колонок
+   */
   private generatorColumn(
     schema: string,
     table: string,
@@ -63,6 +68,12 @@ export class SqlGeneratorService {
     return { resultCol, resultUi };
   }
 
+  /**
+   * Функция создать комментарии для таблицы
+   * @param schema
+   * @param table
+   * @private
+   */
   private generatorTableCommit(
     schema: string,
     table: SqlGeneratorTableInterface,
@@ -86,11 +97,21 @@ export class SqlGeneratorService {
     return result.join("\n");
   }
 
+  /**
+   * Функция получить колонку первичного ключа
+   * @param columns
+   * @private
+   */
   private aiColumnGet(columns: SqlGeneratorTableColumnInterface[]) {
     return columns.filter(
       (column: SqlGeneratorTableColumnInterface) => column.ai,
     )[0];
   }
+
+  /**
+   * Создание функции проверки по id
+   * @param body
+   */
   public generatorFunctionCheckId(body: SqlGeneratorDto) {
     const aiColumn = this.aiColumnGet(body.table.column);
 
@@ -107,6 +128,12 @@ export class SqlGeneratorService {
       "json",
     );
   }
+
+  /**
+   * Вспомогательная функция для создания функции filter
+   * создает входящие параметры для функции и where
+   * @param body
+   */
   public generatorFilterParameter(body: SqlGeneratorDto) {
     const getParameter = (
       name: string,
@@ -148,6 +175,10 @@ export class SqlGeneratorService {
     return { where, params };
   }
 
+  /**
+   * Создать функцию filter
+   * @param body
+   */
   public generatorFunctionFilter(body: SqlGeneratorDto) {
     const { params, where } = this.generatorFilterParameter(body);
     return templateFunction(
@@ -165,6 +196,9 @@ export class SqlGeneratorService {
     );
   }
 
+  /**
+   * получить алис имени таблицы
+   */
   public aliasNameTable(name: string) {
     const result = [];
     let index = -1;
@@ -177,6 +211,10 @@ export class SqlGeneratorService {
     return result.join("");
   }
 
+  /**
+   * Создать функцию CheckUI проверка унилькальности
+   * @param body
+   */
   public generatorCheckUI(body: SqlGeneratorDto) {
     const aiColumn = this.aiColumnGet(body.table.column);
     const code: string[] = [];
@@ -221,24 +259,62 @@ export class SqlGeneratorService {
     );
   }
 
-  public generatorRunCheckId(body: SqlGeneratorDto) {
+  /**
+   * Создать вызов функции checkId по зависимостям FK
+   * @param body
+   * @param checkAddAI
+   */
+  public generatorRunCheckId(body: SqlGeneratorDto, checkAddAI: boolean) {
     const result: string[] = [];
     for (const column of body.table.column) {
       if (column.FK && column.FK.funCheck) {
         result.push(
-          templateFunctionRunCheckId(
-            `${body.schema.name}.${body.table.name}`,
-            column.name,
-          ),
+          templateFunctionRunCheckId(`${column.FK.table}`, column.name),
         );
       }
+    }
+    if (checkAddAI) {
+      const ai = this.aiColumnGet(body.table.column);
+      result.push(
+        templateFunctionRunCheckId(
+          `${body.schema.name}.${body.table.name}`,
+          ai.name,
+        ),
+      );
     }
     return result.join("\n\n\t\t");
   }
 
+  public generatorRunCheckUI(body: SqlGeneratorDto, checkAddAI: boolean) {
+    const columns: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ui) {
+        columns.push(`_${column.name} => _${column.name}`);
+      }
+    }
+    if (checkAddAI) {
+      const ai = this.aiColumnGet(body.table.column);
+      columns.push(`_${ai.name} => _${ai.name}`);
+    }
+    const result: string[] = [];
+    result.push("\n\t\t");
+    result.push(
+      templateFunctionRunCheckUI(
+        `${body.schema.name}.${body.table.name}`,
+        columns.join(", "),
+      ),
+    );
+    result.push("\n" + templateCheckStatus("400") + "\n");
+    return result.join("");
+  }
+
+  /**
+   * Создать функции insert
+   * @param body
+   */
   public generatorInsert(body: SqlGeneratorDto) {
     const result: string[] = [];
-    result.push(this.generatorRunCheckId(body));
+    result.push(this.generatorRunCheckId(body, false));
     const insertInfo: string[] = [];
     const insertValues: string[] = [];
     for (const column of body.table.column) {
@@ -248,19 +324,58 @@ export class SqlGeneratorService {
       insertValues.push(column.name);
       insertInfo.push(`_${column.name}`);
     }
+    const code: string[] = [];
+    code.push(`\n\t\t${result.join("")}\n`);
+    code.push(this.generatorRunCheckUI(body, false));
+    code.push(
+      templateFunctionInsert(
+        `${body.schema.name}.${body.table.name}`,
+        insertInfo.join(", "),
+        insertValues.join(", "),
+      ),
+    );
     return templateFunction(
       body.schema.name,
       `${body.table.name}_insert`,
       `${this.generatorInParams(body)}\n\tout id_ int,\n\tout result_ json`,
-      `\n\t\t${result.join("")} \n${templateFunctionInsert(
-        `${body.schema.name}.${body.table.name}`,
-        insertInfo.join(", "),
-        insertValues.join(", "),
-      )}`,
+      code.join(""),
+      "",
+    );
+  }
+  /**
+   * Создать функции updated
+   * @param body
+   */
+  public generatorUpdated(body: SqlGeneratorDto) {
+    const ai = this.aiColumnGet(body.table.column);
+    const result: string[] = [];
+    result.push(this.generatorRunCheckId(body, true));
+    const updateCode: string[] = [];
+    for (const column of body.table.column) {
+      if (column.ai) {
+        continue;
+      }
+      updateCode.push(`${column.name} = _${column.name}`);
+    }
+    const code: string[] = [];
+    code.push(`\n\t\t${result.join("")}\n`);
+    code.push(this.generatorRunCheckUI(body, true));
+    code.push("\n\t\tupdate constructor.type_css_var");
+    code.push(`\n\t\tset ${updateCode.join(", ")}`);
+    code.push(`\n\t\twhere ${ai.name} = _${ai.name};`);
+    return templateFunction(
+      body.schema.name,
+      `${body.table.name}_updated`,
+      `${this.generatorInParams(body)}\n\tout result_ json`,
+      code.join(""),
       "",
     );
   }
 
+  /**
+   * создание всех шаблонных функциях
+   * @param body
+   */
   public generatorTempFunction(body: SqlGeneratorDto) {
     const result = [];
     if (body.function.filter) {
@@ -278,10 +393,16 @@ export class SqlGeneratorService {
     if (body.function.insert) {
       result.push(this.generatorInsert(body));
     }
-
+    if (body.function.updated) {
+      result.push(this.generatorUpdated(body));
+    }
     return result;
   }
 
+  /**
+   * функция генерирует входяшие параметры для функции создании и редактировании
+   * @param body
+   */
   public generatorInParams(body: SqlGeneratorDto) {
     const result: string[] = [];
     for (const column of body.table.column) {
@@ -297,6 +418,11 @@ export class SqlGeneratorService {
     }
     return `\t${result.join(",\n\t")}`;
   }
+
+  /**
+   * общая функция генерация sql по json
+   * @param body
+   */
   public generatorSql(body: SqlGeneratorDto) {
     const result = [];
     const { resultUi, resultCol } = this.generatorColumn(

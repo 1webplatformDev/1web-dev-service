@@ -103,9 +103,7 @@ export function templateFunctionRunCheckId(
   nameParams: string,
 ) {
   return `select * into result_ from ${nameFun}_check_id(_id => ${nameParams});
-\t\tif (result_::json->'status_result')::text::int = 404 then
-\t\t\treturn;
-\t\tend if;`;
+${templateCheckStatus("404")}`;
 }
 
 export function templateFunctionInsert(
@@ -114,4 +112,13 @@ export function templateFunctionInsert(
   values: string,
 ) {
   return `\n\t\tinsert into ${name} (${column}) \n\t\tvalues (${values})\n\t\treturning id into id_;`;
+}
+
+export function templateFunctionRunCheckUI(name: string, column: string) {
+  return `select * into result_ from ${name}_check_unique(${column})`;
+}
+export function templateCheckStatus(code: string) {
+  return `\t\tif (result_::json->'status_result')::text::int = ${code} then
+\t\t\treturn;
+\t\tend if;`;
 }

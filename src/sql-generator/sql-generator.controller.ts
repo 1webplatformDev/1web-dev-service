@@ -3,6 +3,7 @@ import { SqlGeneratorService } from "./sql-generator.service";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { Response } from "express";
 import { FileService } from "../file/file.service";
+import { ApiOperation } from "@nestjs/swagger";
 
 @Controller("sql-generator")
 export class SqlGeneratorController {
@@ -12,6 +13,9 @@ export class SqlGeneratorController {
   ) {}
 
   @Post("")
+  @ApiOperation({
+    summary: "Генерация sql файла базовая сущность на основе json",
+  })
   public generatorTable(
     @Body() body: SqlGeneratorDto,
     @Res() response: Response,
