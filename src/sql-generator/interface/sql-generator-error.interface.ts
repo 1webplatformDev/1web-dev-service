@@ -11,7 +11,7 @@ export class SqlGeneratorErrorInterface {
   description: string;
 
   @ApiProperty()
-  idProject: number;
+  id_project: number;
 
   @ApiProperty()
   status: number;

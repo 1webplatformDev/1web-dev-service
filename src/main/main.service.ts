@@ -25,7 +25,7 @@ export class MainService {
   public joinRepositoryFile() {
     const catalog: string = this.configService.get("CATALOG_SQL_REPOSITORY");
     const paths = this.fileService.getPathFilesRecursion(catalog, [], "sql");
-    const filesAdd: any = {};
+    const filesAdd: { [key: string]: boolean } = {};
     const result: string[] = [];
 
     const generatorSql = (paths: string[]) => {

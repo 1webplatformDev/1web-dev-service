@@ -18,6 +18,7 @@ import {
   templateReturnFilter,
   templateTable,
 } from "./template/sql-generator";
+import { ObjectPrimitive, Primitive } from "../main/type/mainType";
 
 @Injectable()
 export class SqlGeneratorService {
@@ -109,6 +110,13 @@ export class SqlGeneratorService {
   }
 
   /**
+   * Функция создает строку схема + таблица
+   */
+  private getSchemaAndTableName(body: SqlGeneratorDto) {
+    return `${body.schema.name}.${body.table.name}`;
+  }
+
+  /**
    * Создание функции проверки по id
    * @param body
    */
@@ -116,7 +124,7 @@ export class SqlGeneratorService {
     const aiColumn = this.aiColumnGet(body.table.column);
 
     const code = templateFunctionCheckId(
-      `${body.schema.name}.${body.table.name}`,
+      this.getSchemaAndTableName(body),
       aiColumn.name,
     );
     return templateFunction(
@@ -192,7 +200,7 @@ export class SqlGeneratorService {
         where.join("\n\t\t\t\tand"),
       ),
       null,
-      templateReturnFilter(`${body.schema.name}.${body.table.name}`),
+      templateReturnFilter(this.getSchemaAndTableName(body)),
     );
   }
 
@@ -230,7 +238,7 @@ export class SqlGeneratorService {
         );
         code.push(
           templateFunctionUIItem(
-            `${body.schema.name}.${body.table.name}`,
+            this.getSchemaAndTableName(body),
             column.name,
             aiColumn.name,
           ),
@@ -276,10 +284,7 @@ export class SqlGeneratorService {
     if (checkAddAI) {
       const ai = this.aiColumnGet(body.table.column);
       result.push(
-        templateFunctionRunCheckId(
-          `${body.schema.name}.${body.table.name}`,
-          ai.name,
-        ),
+        templateFunctionRunCheckId(this.getSchemaAndTableName(body), ai.name),
       );
     }
     return result.join("\n\n\t\t");
@@ -300,7 +305,7 @@ export class SqlGeneratorService {
     result.push("\n\t\t");
     result.push(
       templateFunctionRunCheckUI(
-        `${body.schema.name}.${body.table.name}`,
+        this.getSchemaAndTableName(body),
         columns.join(", "),
       ),
     );
@@ -329,7 +334,7 @@ export class SqlGeneratorService {
     code.push(this.generatorRunCheckUI(body, false));
     code.push(
       templateFunctionInsert(
-        `${body.schema.name}.${body.table.name}`,
+        this.getSchemaAndTableName(body),
         insertInfo.join(", "),
         insertValues.join(", "),
       ),
@@ -420,6 +425,57 @@ export class SqlGeneratorService {
   }
 
   /**
+   * Создание sql кода insert errors
+   * @private
+   */
+  private generatorInsertError(body: SqlGeneratorDto) {
+    const result: string[] = [];
+    for (const columnElement of body.table.column) {
+      let key: string = null;
+
+      if (columnElement.uiError) {
+        key = "uiError";
+      }
+
+      if (columnElement.error404) {
+        key = "error404";
+      }
+
+      if (columnElement[key]) {
+        const res = this.generatorInsertOverriding(
+          columnElement[key] as unknown as ObjectPrimitive,
+          this.getSchemaAndTableName(body),
+        );
+        result.push(res);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Создание sql кода insert overriding
+   */
+  public generatorInsertOverriding(
+    dataset: ObjectPrimitive,
+    tableName: string,
+  ) {
+    const column: string[] = [];
+    const values: Primitive[] = [];
+    for (const key in dataset) {
+      column.push(key);
+      if (typeof dataset[key] == "string") {
+        values.push(`'${dataset[key]}'`);
+      } else if (dataset[key] == null) {
+        values.push("null");
+      } else {
+        values.push(dataset[key]);
+      }
+    }
+    const columnString = column.join(", ");
+    const valuesString = values.join(", ");
+    return `insert into ${tableName}(${columnString})\noverriding system value values(${valuesString})`;
+  }
+  /**
    * общая функция генерация sql по json
    * @param body
    */
@@ -447,6 +503,8 @@ export class SqlGeneratorService {
 
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
+    result.push("\n\n");
+    result.push(this.generatorInsertError(body).join("\n\n"));
     return result.join("");
   }
 }
