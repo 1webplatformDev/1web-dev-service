@@ -1,18 +1,14 @@
-import { Body, Controller, Post, Res } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Res } from "@nestjs/common";
 import { SqlGeneratorService } from "./sql-generator.service";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { Response } from "express";
-import { FileService } from "../file/file.service";
 import { ApiOperation } from "@nestjs/swagger";
 
 @Controller("sql-generator")
 export class SqlGeneratorController {
-  constructor(
-    private readonly sqlGeneratorService: SqlGeneratorService,
-    private readonly fileService: FileService,
-  ) {}
+  constructor(private readonly sqlGeneratorService: SqlGeneratorService) {}
 
-  @Post("")
+  @Post("/json")
   @ApiOperation({
     summary: "Генерация sql файла базовая сущность на основе json",
   })
@@ -28,5 +24,26 @@ export class SqlGeneratorController {
     );
     const string = this.sqlGeneratorService.generatorSql(body);
     response.send(string);
+  }
+
+  @Get("/insert")
+  @ApiOperation({
+    summary: "Генерация sql файла базовая сущность на основе json",
+  })
+  public async generatorInsert(
+    @Query("schema")
+    schema: string,
+    @Query("table")
+    table: string,
+    @Res() response: Response,
+  ) {
+    response.setHeader("Content-Type", "application/sql");
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename=insert-${schema}.${table}.sql`,
+    );
+    response.send(
+      await this.sqlGeneratorService.generatorSqlInsertDataset(schema, table),
+    );
   }
 }

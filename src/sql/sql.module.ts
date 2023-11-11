@@ -6,5 +6,6 @@ import { SqlController } from "./sql.controller";
   imports: [],
   controllers: [SqlController],
   providers: [SqlService],
+  exports: [SqlService],
 })
 export class SqlModule {}

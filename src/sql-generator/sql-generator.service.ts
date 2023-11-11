@@ -19,9 +19,11 @@ import {
   templateTable,
 } from "./template/sql-generator";
 import { ObjectPrimitive, Primitive } from "../main/type/mainType";
+import { SqlService } from "../sql/sql.service";
 
 @Injectable()
 export class SqlGeneratorService {
+  constructor(private readonly sqlService: SqlService) {}
   /**
    * генерация колонок
    */
@@ -120,7 +122,7 @@ export class SqlGeneratorService {
    * Создание функции проверки по id
    * @param body
    */
-  public generatorFunctionCheckId(body: SqlGeneratorDto) {
+  private generatorFunctionCheckId(body: SqlGeneratorDto) {
     const aiColumn = this.aiColumnGet(body.table.column);
 
     const code = templateFunctionCheckId(
@@ -142,7 +144,7 @@ export class SqlGeneratorService {
    * создает входящие параметры для функции и where
    * @param body
    */
-  public generatorFilterParameter(body: SqlGeneratorDto) {
+  private generatorFilterParameter(body: SqlGeneratorDto) {
     const getParameter = (
       name: string,
       type: string,
@@ -187,7 +189,7 @@ export class SqlGeneratorService {
    * Создать функцию filter
    * @param body
    */
-  public generatorFunctionFilter(body: SqlGeneratorDto) {
+  private generatorFunctionFilter(body: SqlGeneratorDto) {
     const { params, where } = this.generatorFilterParameter(body);
     return templateFunction(
       body.schema.name,
@@ -207,7 +209,7 @@ export class SqlGeneratorService {
   /**
    * получить алис имени таблицы
    */
-  public aliasNameTable(name: string) {
+  private aliasNameTable(name: string) {
     const result = [];
     let index = -1;
     for (const char of name) {
@@ -223,7 +225,7 @@ export class SqlGeneratorService {
    * Создать функцию CheckUI проверка унилькальности
    * @param body
    */
-  public generatorCheckUI(body: SqlGeneratorDto) {
+  private generatorCheckUI(body: SqlGeneratorDto) {
     const aiColumn = this.aiColumnGet(body.table.column);
     const code: string[] = [];
     const declareValue: string[] = [];
@@ -272,7 +274,7 @@ export class SqlGeneratorService {
    * @param body
    * @param checkAddAI
    */
-  public generatorRunCheckId(body: SqlGeneratorDto, checkAddAI: boolean) {
+  private generatorRunCheckId(body: SqlGeneratorDto, checkAddAI: boolean) {
     const result: string[] = [];
     for (const column of body.table.column) {
       if (column.FK && column.FK.funCheck) {
@@ -290,7 +292,7 @@ export class SqlGeneratorService {
     return result.join("\n\n\t\t");
   }
 
-  public generatorRunCheckUI(body: SqlGeneratorDto, checkAddAI: boolean) {
+  private generatorRunCheckUI(body: SqlGeneratorDto, checkAddAI: boolean) {
     const columns: string[] = [];
     for (const column of body.table.column) {
       if (column.ui) {
@@ -317,7 +319,7 @@ export class SqlGeneratorService {
    * Создать функции insert
    * @param body
    */
-  public generatorInsert(body: SqlGeneratorDto) {
+  private generatorInsert(body: SqlGeneratorDto) {
     const result: string[] = [];
     result.push(this.generatorRunCheckId(body, false));
     const insertInfo: string[] = [];
@@ -351,7 +353,7 @@ export class SqlGeneratorService {
    * Создать функции updated
    * @param body
    */
-  public generatorUpdated(body: SqlGeneratorDto) {
+  private generatorUpdated(body: SqlGeneratorDto) {
     const ai = this.aiColumnGet(body.table.column);
     const result: string[] = [];
     result.push(this.generatorRunCheckId(body, true));
@@ -381,7 +383,7 @@ export class SqlGeneratorService {
    * создание всех шаблонных функциях
    * @param body
    */
-  public generatorTempFunction(body: SqlGeneratorDto) {
+  private generatorTempFunction(body: SqlGeneratorDto) {
     const result = [];
     if (body.function.filter) {
       result.push(this.generatorFunctionFilter(body));
@@ -408,7 +410,7 @@ export class SqlGeneratorService {
    * функция генерирует входяшие параметры для функции создании и редактировании
    * @param body
    */
-  public generatorInParams(body: SqlGeneratorDto) {
+  private generatorInParams(body: SqlGeneratorDto) {
     const result: string[] = [];
     for (const column of body.table.column) {
       if (column.ai) {
@@ -455,7 +457,7 @@ export class SqlGeneratorService {
   /**
    * Создание sql кода insert overriding
    */
-  public generatorInsertOverriding(
+  private generatorInsertOverriding(
     dataset: ObjectPrimitive,
     tableName: string,
   ) {
@@ -503,8 +505,17 @@ export class SqlGeneratorService {
 
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
-    result.push("\n\n-- в файл public/error.sql");
+    result.push("\n\n-- в файл private/error.sql");
     result.push(this.generatorInsertError(body).join("\n\n"));
     return result.join("");
+  }
+
+  public async generatorSqlInsertDataset(schema: string, table: string) {
+    const result: string[] = [];
+    const rows = await this.sqlService.selectTable(schema, table);
+    for (const row of rows.rows) {
+      result.push(this.generatorInsertOverriding(row, `${schema}.${table}`));
+    }
+    return result.join("\n\n");
   }
 }
