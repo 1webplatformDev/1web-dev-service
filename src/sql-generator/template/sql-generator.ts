@@ -53,9 +53,9 @@ export function templateComment(
   comment: string,
 ) {
   if (columnName) {
-    return `comment on ${type} ${schema}.${name}.${columnName} is (${comment});`;
+    return `comment on ${type} ${schema}.${name}.${columnName} is '${comment}';`;
   }
-  return `comment on ${type} ${schema}.${name} is (${comment});`;
+  return `comment on ${type} ${schema}.${name} is '${comment}';`;
 }
 
 export function templateTable(
@@ -115,7 +115,7 @@ export function templateFunctionInsert(
 }
 
 export function templateFunctionRunCheckUI(name: string, column: string) {
-  return `select * into result_ from ${name}_check_unique(${column})`;
+  return `select * into result_ from ${name}_check_unique(${column});`;
 }
 export function templateCheckStatus(code: string) {
   return `\t\tif (result_::json->'status_result')::text::int = ${code} then

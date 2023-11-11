@@ -234,7 +234,7 @@ export class SqlGeneratorService {
     for (const column of body.table.column) {
       if (column.ui) {
         params.push(`in _${column.name} ${column.type}`);
-        declareValue.push(`count_${column.name}`);
+        declareValue.push(`count_${column.name} int`);
         declareValueErrors.push(
           `error_id_${column.name} int = ${column.uiError.id}`,
         );
@@ -261,6 +261,7 @@ export class SqlGeneratorService {
         `\t${params.join(",\n\t")}`,
         templateFunctionUI(code.join("")),
         `\n\t\t${declareAll.join(";\n\t\t")}`,
+        "json",
       );
     }
     throw new HttpException(
@@ -332,7 +333,7 @@ export class SqlGeneratorService {
       insertInfo.push(`_${column.name}`);
     }
     const code: string[] = [];
-    code.push(`\n\t\t${result.join("")}\n`);
+    code.push(`\t\t${result.join("")}\n`);
     code.push(this.generatorRunCheckUI(body, false));
     code.push(
       templateFunctionInsert(
@@ -344,9 +345,10 @@ export class SqlGeneratorService {
     return templateFunction(
       body.schema.name,
       `${body.table.name}_insert`,
-      `${this.generatorInParams(body)}\n\tout id_ int,\n\tout result_ json`,
+      `${this.generatorInParams(body)},\n\tout id_ int,\n\tout result_ json`,
       code.join(""),
       "",
+      "record",
     );
   }
   /**
@@ -373,9 +375,10 @@ export class SqlGeneratorService {
     return templateFunction(
       body.schema.name,
       `${body.table.name}_updated`,
-      `${this.generatorInParams(body)}\n\tout result_ json`,
+      `${this.generatorInParams(body)},\n\tout result_ json`,
       code.join(""),
       "",
+      "json",
     );
   }
 
@@ -446,7 +449,7 @@ export class SqlGeneratorService {
       if (columnElement[key]) {
         const res = this.generatorInsertOverriding(
           columnElement[key] as unknown as ObjectPrimitive,
-          this.getSchemaAndTableName(body),
+          "public.errors",
         );
         result.push(res);
       }
@@ -475,7 +478,7 @@ export class SqlGeneratorService {
     }
     const columnString = column.join(", ");
     const valuesString = values.join(", ");
-    return `insert into ${tableName}(${columnString})\noverriding system value values(${valuesString})`;
+    return `insert into ${tableName}(${columnString})\noverriding system value values(${valuesString});`;
   }
   /**
    * общая функция генерация sql по json
@@ -505,7 +508,7 @@ export class SqlGeneratorService {
 
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
-    result.push("\n\n-- в файл private/error.sql");
+    result.push("\n\n-- в файл private/error.sql\n");
     result.push(this.generatorInsertError(body).join("\n\n"));
     return result.join("");
   }
