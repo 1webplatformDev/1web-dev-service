@@ -503,7 +503,7 @@ export class SqlGeneratorService {
 
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
-    result.push("\n\n");
+    result.push("\n\n-- в файл public/error.sql");
     result.push(this.generatorInsertError(body).join("\n\n"));
     return result.join("");
   }
