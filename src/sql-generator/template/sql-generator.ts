@@ -102,7 +102,7 @@ export function templateFunctionRunCheckId(
   nameFun: string,
   nameParams: string,
 ) {
-  return `select * into result_ from ${nameFun}_check_id(_id => ${nameParams});
+  return `select * into result_ from ${nameFun}_check_id(_id => _${nameParams});
 ${templateCheckStatus("404")}`;
 }
 

@@ -152,7 +152,7 @@ export class SqlGeneratorService {
     ) => {
       return {
         paramsString: `_${name} ${type} = null`,
-        whereString: `(${aliasNameTable}.${name} = ${name} or ${name} is null)`,
+        whereString: `(${aliasNameTable}.${name} = _${name} or _${name} is null)`,
       };
     };
     const aliasNameTable = this.aliasNameTable(body.table.name);
@@ -164,13 +164,15 @@ export class SqlGeneratorService {
       }
 
       if (column.ai) {
-        const { paramsString, whereString } = getParameter(
+        const { paramsString } = getParameter(
           `no_${column.name}`,
           column.type,
           aliasNameTable,
         );
         params.push(paramsString);
-        where.push(whereString);
+        where.push(
+          `(${aliasNameTable}.${column.name} <> _no_${column.name} or _no_${column.name} is null)`,
+        );
       }
       const { paramsString, whereString } = getParameter(
         column.name,
@@ -257,7 +259,7 @@ export class SqlGeneratorService {
       ];
       return templateFunction(
         body.schema.name,
-        `${body.table.name}_check_ui`,
+        `${body.table.name}_check_unique`,
         `\t${params.join(",\n\t")}`,
         templateFunctionUI(code.join("")),
         `\n\t\t${declareAll.join(";\n\t\t")}`,
@@ -329,8 +331,8 @@ export class SqlGeneratorService {
       if (column.ai) {
         continue;
       }
-      insertValues.push(column.name);
-      insertInfo.push(`_${column.name}`);
+      insertValues.push(`_${column.name}`);
+      insertInfo.push(column.name);
     }
     const code: string[] = [];
     code.push(`\t\t${result.join("")}\n`);
@@ -369,13 +371,16 @@ export class SqlGeneratorService {
     const code: string[] = [];
     code.push(`\n\t\t${result.join("")}\n`);
     code.push(this.generatorRunCheckUI(body, true));
-    code.push("\n\t\tupdate constructor.type_css_var");
+    code.push(`
+\t\tupdate ${this.getSchemaAndTableName(body)}`);
     code.push(`\n\t\tset ${updateCode.join(", ")}`);
     code.push(`\n\t\twhere ${ai.name} = _${ai.name};`);
     return templateFunction(
       body.schema.name,
       `${body.table.name}_updated`,
-      `${this.generatorInParams(body)},\n\tout result_ json`,
+      `\tin _${ai.name} ${ai.type},\n${this.generatorInParams(
+        body,
+      )},\n\tout result_ json`,
       code.join(""),
       "",
       "json",
@@ -424,6 +429,9 @@ export class SqlGeneratorService {
 
       if (column.default) {
         result[result.length - 1] += ` = ${column.default}`;
+      }
+      if (column.notNull !== true && column.default == null) {
+        result[result.length - 1] += ` = null`;
       }
     }
     return `\t${result.join(",\n\t")}`;
