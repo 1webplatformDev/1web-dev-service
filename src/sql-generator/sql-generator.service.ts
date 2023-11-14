@@ -348,7 +348,7 @@ export class SqlGeneratorService {
       body.schema.name,
       `${body.table.name}_insert`,
       `${this.generatorInParams(body)},\n\tout id_ int,\n\tout result_ json`,
-      code.join(""),
+      `\n${code.join("")}`,
       "",
       "record",
     );
