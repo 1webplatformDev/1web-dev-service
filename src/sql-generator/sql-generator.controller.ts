@@ -2,9 +2,10 @@ import { Body, Controller, Get, Post, Query, Res } from "@nestjs/common";
 import { SqlGeneratorService } from "./sql-generator.service";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { Response } from "express";
-import { ApiOperation } from "@nestjs/swagger";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 @Controller("sql-generator")
+@ApiTags("sql-generator")
 export class SqlGeneratorController {
   constructor(private readonly sqlGeneratorService: SqlGeneratorService) {}
 
