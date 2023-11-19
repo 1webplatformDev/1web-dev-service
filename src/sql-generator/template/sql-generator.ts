@@ -122,3 +122,11 @@ export function templateCheckStatus(code: string) {
 \t\t\treturn;
 \t\tend if;`;
 }
+
+export function templateCommentFunction(
+  schemaName: string,
+  funName: string,
+  params: string,
+) {
+  return `-- select * from ${schemaName}.${funName}(${params})`;
+}

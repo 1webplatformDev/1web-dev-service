@@ -1,10 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, Post } from "@nestjs/common";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
 import {
   templateCheckStatus,
   templateComment,
+  templateCommentFunction,
   templateDeclareCheckId,
   templateFunction,
   templateFunctionCheckId,
@@ -20,6 +21,7 @@ import {
 } from "./template/sql-generator";
 import { ObjectPrimitive, Primitive } from "../main/type/mainType";
 import { SqlService } from "../sql/sql.service";
+import { FunctionInParamsInterface } from "../sql/interface/functionInParams.interface";
 
 @Injectable()
 export class SqlGeneratorService {
@@ -528,5 +530,24 @@ export class SqlGeneratorService {
       result.push(this.generatorInsertOverriding(row, `${schema}.${table}`));
     }
     return result.join("\n\n");
+  }
+
+  public async generatorCommentBdSql(schema: string[], entity: string) {
+    const result = await this.sqlService.functionInParams(schema, entity);
+    const comment: string[] = [];
+    for (const row of result.rows as FunctionInParamsInterface[]) {
+      const params: string[] = [];
+      for (const param of row.params) {
+        params.push(`${param.name} ${param.type}`);
+      }
+      comment.push(
+        templateCommentFunction(
+          row.schema_name,
+          row.fun_name,
+          params.join(", "),
+        ),
+      );
+    }
+    return comment;
   }
 }

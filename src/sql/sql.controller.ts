@@ -9,13 +9,10 @@ export class SqlController {
   constructor(private readonly sqlService: SqlService) {}
 
   @Post("function/in")
-  public async getFunctionIn(
-    @Body() functionInDto: FunctionInDto,
-    @Query("entity") entity: string,
-  ) {
+  public async getFunctionIn(@Body() functionInDto: FunctionInDto) {
     const result = await this.sqlService.functionInParams(
       functionInDto.schema,
-      entity,
+      functionInDto.entity,
     );
     return result.rows;
   }

@@ -3,6 +3,7 @@ import { SqlGeneratorService } from "./sql-generator.service";
 import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { Response } from "express";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { FunctionInDto } from "../sql/dto/functionIn.dto";
 
 @Controller("sql-generator")
 @ApiTags("sql-generator")
@@ -45,6 +46,17 @@ export class SqlGeneratorController {
     );
     response.send(
       await this.sqlGeneratorService.generatorSqlInsertDataset(schema, table),
+    );
+  }
+
+  @Post("/comment")
+  @ApiOperation({
+    summary: "Генерация sql комментариев вызова функции на основе существующий функции бд",
+  })
+  public async generatorCommit(@Body() functionInDto: FunctionInDto) {
+    return await this.sqlGeneratorService.generatorCommentBdSql(
+      functionInDto.schema,
+      functionInDto.entity,
     );
   }
 }
