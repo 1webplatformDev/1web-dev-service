@@ -538,7 +538,7 @@ export class SqlGeneratorService {
     for (const row of result.rows as FunctionInParamsInterface[]) {
       const params: string[] = [];
       for (const param of row.params) {
-        params.push(`${param.name} ${param.type}`);
+        params.push(`${param.name} => ${param.type}`);
       }
       comment.push(
         templateCommentFunction(

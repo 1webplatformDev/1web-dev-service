@@ -51,7 +51,8 @@ export class SqlGeneratorController {
 
   @Post("/comment")
   @ApiOperation({
-    summary: "Генерация sql комментариев вызова функции на основе существующий функции бд",
+    summary:
+      "Генерация sql комментариев вызова функции на основе существующий функции бд",
   })
   public async generatorCommit(@Body() functionInDto: FunctionInDto) {
     return await this.sqlGeneratorService.generatorCommentBdSql(
