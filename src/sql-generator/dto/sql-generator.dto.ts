@@ -10,4 +10,6 @@ export class SqlGeneratorDto {
   table: SqlGeneratorTableInterface;
   @ApiProperty()
   function: SqlGeneratorFunctionInterface;
+  @ApiProperty()
+  insertError: boolean;
 }

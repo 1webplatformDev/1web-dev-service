@@ -518,8 +518,10 @@ export class SqlGeneratorService {
 
     result.push(commentTable + "\n\n");
     result.push(this.generatorTempFunction(body).join("\n\n"));
-    result.push("\n\n-- в файл private/error.sql\n");
-    result.push(this.generatorInsertError(body).join("\n\n"));
+    if (body.insertError != false) {
+      result.push("\n\n-- в файл public/error.sql\n");
+      result.push(this.generatorInsertError(body).join("\n\n"));
+    }
     return result.join("");
   }
 
