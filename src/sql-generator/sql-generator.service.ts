@@ -3,6 +3,7 @@ import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
 import {
+  templateCheckArrayIdFunction,
   templateCheckStatus,
   templateComment,
   templateCommentFunction,
@@ -388,6 +389,26 @@ export class SqlGeneratorService {
       "json",
     );
   }
+  /**
+   * создание функции check_array_id
+   * @param body
+   */
+  private generatorCheckArrayId(body: SqlGeneratorDto) {
+    const ai = this.aiColumnGet(body.table.column);
+    const aliasTable = this.aliasNameTable(body.table.name);
+    const schemaAndTable = this.getSchemaAndTableName(body);
+    const errorText = body.function.check_array_id.text_error;
+    const declare = `\n\t\terror_text varchar = '${errorText}';\n\t\terror_ids int[];\n\t\twarning_json json[];`;
+    const params = `\tids_ integer[],\n\tout _result_ids integer[],\n\tout _result json`;
+    return templateFunction(
+      body.schema.name,
+      `${body.table.name}_check_array_id`,
+      params,
+      templateCheckArrayIdFunction(ai.name, aliasTable, schemaAndTable),
+      declare,
+      "record",
+    );
+  }
 
   /**
    * создание всех шаблонных функциях
@@ -405,6 +426,10 @@ export class SqlGeneratorService {
 
     if (body.function.check_ui) {
       result.push(this.generatorCheckUI(body));
+    }
+
+    if (body.function.check_array_id?.check) {
+      result.push(this.generatorCheckArrayId(body));
     }
 
     if (body.function.insert) {

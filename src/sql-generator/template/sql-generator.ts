@@ -130,3 +130,17 @@ export function templateCommentFunction(
 ) {
   return `-- select * from ${schemaName}.${funName}(${params})`;
 }
+export function templateCheckArrayIdFunction(
+  aiName: string,
+  aliasTable: string,
+  schemaAndTableName: string,
+) {
+  return `\n\t\tselect array_agg(${aliasTable}.${aiName}) into _result_ids from ${schemaAndTableName} ${aliasTable} where ${aliasTable}.${aiName} = any(ids_);
+\t\tselect array(select unnest(ids_) except select unnest(_result_ids)) into error_ids;
+\t\tif array_length(error_ids, 1) <> 0 then
+\t\t\tselect array(select json_build_object('name', replace(error_text, '{1}', array_to_string(error_ids, ',')))) into warning_json;
+\t\t\tselect * into _result from public.create_result_json(_warning => warning_json);
+\t\t\treturn;
+\t\tend if;
+\t\tselect * into _result from public.create_result_json();`;
+}

@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { SqlGeneratorFunctionCheckArrayIdInterface } from "./sql-generator-function-check-array-id.interface";
 
 export class SqlGeneratorFunctionInterface {
   @ApiProperty()
@@ -11,4 +12,6 @@ export class SqlGeneratorFunctionInterface {
   filter: boolean;
   @ApiProperty()
   updated: boolean;
+  @ApiProperty()
+  check_array_id: SqlGeneratorFunctionCheckArrayIdInterface;
 }
