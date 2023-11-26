@@ -4,6 +4,7 @@ import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { Response } from "express";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { FunctionInDto } from "../sql/dto/functionIn.dto";
+import { SqlCheckArrayIdDto } from "./dto/sql-check-array-id.dto";
 
 @Controller("sql-generator")
 @ApiTags("sql-generator")
@@ -47,6 +48,14 @@ export class SqlGeneratorController {
     response.send(
       await this.sqlGeneratorService.generatorSqlInsertDataset(schema, table),
     );
+  }
+
+  @Post("/checkArrayId")
+  @ApiOperation({
+    summary: "Генерация функции checkArrayId sql",
+  })
+  public generatorCheckArrayId(@Body() body: SqlCheckArrayIdDto) {
+    return this.sqlGeneratorService.generatorFunctionCheckArrayId(body);
   }
 
   @Post("/comment")

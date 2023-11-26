@@ -6,7 +6,7 @@ export class SqlGeneratorTableInterface {
   name: string;
 
   @ApiProperty()
-  comment: string;
+  comment?: string;
 
   @ApiProperty({ isArray: true, type: SqlGeneratorTableColumnInterface })
   column: SqlGeneratorTableColumnInterface[];

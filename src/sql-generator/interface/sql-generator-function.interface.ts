@@ -3,15 +3,15 @@ import { SqlGeneratorFunctionCheckArrayIdInterface } from "./sql-generator-funct
 
 export class SqlGeneratorFunctionInterface {
   @ApiProperty()
-  check_ui: boolean;
+  check_ui?: boolean;
   @ApiProperty()
-  check_id: boolean;
+  check_id?: boolean;
   @ApiProperty()
-  insert: boolean;
+  insert?: boolean;
   @ApiProperty()
-  filter: boolean;
+  filter?: boolean;
   @ApiProperty()
-  updated: boolean;
+  updated?: boolean;
   @ApiProperty()
-  check_array_id: SqlGeneratorFunctionCheckArrayIdInterface;
+  check_array_id?: SqlGeneratorFunctionCheckArrayIdInterface;
 }

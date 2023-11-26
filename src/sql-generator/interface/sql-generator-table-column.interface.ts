@@ -10,19 +10,19 @@ export class SqlGeneratorTableColumnInterface {
   type: string;
 
   @ApiProperty()
-  notNull: boolean;
+  notNull?: boolean;
 
   @ApiProperty()
-  default: string | boolean | number;
+  default?: string | boolean | number;
 
   @ApiProperty()
-  comment: string;
+  comment?: string;
 
   @ApiProperty()
-  ai: boolean;
+  ai?: boolean;
 
   @ApiProperty()
-  ignoreFilter: boolean;
+  ignoreFilter?: boolean;
 
   @ApiProperty()
   ui?: boolean;
@@ -34,5 +34,5 @@ export class SqlGeneratorTableColumnInterface {
   FK?: SqlGeneratorFkInterface;
 
   @ApiProperty()
-  error404: SqlGeneratorErrorInterface;
+  error404?: SqlGeneratorErrorInterface;
 }

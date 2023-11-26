@@ -23,6 +23,7 @@ import {
 import { ObjectPrimitive, Primitive } from "../main/type/mainType";
 import { SqlService } from "../sql/sql.service";
 import { FunctionInParamsInterface } from "../sql/interface/functionInParams.interface";
+import { SqlCheckArrayIdDto } from "./dto/sql-check-array-id.dto";
 
 @Injectable()
 export class SqlGeneratorService {
@@ -218,6 +219,9 @@ export class SqlGeneratorService {
     const result = [];
     let index = -1;
     for (const char of name) {
+      if (index == -1) {
+        result.push(name[0]);
+      }
       index++;
       if (char == "_") {
         result.push(name[index + 1]);
@@ -576,5 +580,34 @@ export class SqlGeneratorService {
       );
     }
     return comment;
+  }
+  public generatorFunctionCheckArrayId(sqlCheckArrayIdDto: SqlCheckArrayIdDto) {
+    const body = this.mapApiToBodyGenerator(sqlCheckArrayIdDto);
+    return this.generatorCheckArrayId(body);
+  }
+  private mapApiToBodyGenerator(
+    sqlCheckArrayIdDto: SqlCheckArrayIdDto,
+  ): SqlGeneratorDto {
+    const sqlGeneratorDto = new SqlGeneratorDto();
+    sqlGeneratorDto.table = {
+      name: sqlCheckArrayIdDto.tableName,
+      column: [
+        {
+          ai: true,
+          name: sqlCheckArrayIdDto.aiName,
+          type: sqlCheckArrayIdDto.aiType,
+        },
+      ],
+    };
+    sqlGeneratorDto.schema = {
+      name: sqlCheckArrayIdDto.schemaName,
+    };
+    sqlGeneratorDto.function = {
+      check_array_id: {
+        check: true,
+        text_error: sqlCheckArrayIdDto.errorText,
+      },
+    };
+    return sqlGeneratorDto;
   }
 }
