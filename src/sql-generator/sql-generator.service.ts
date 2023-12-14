@@ -330,8 +330,7 @@ export class SqlGeneratorService {
    * @param body
    */
   private generatorInsert(body: SqlGeneratorDto) {
-    const result: string[] = [];
-    result.push(this.generatorRunCheckId(body, false));
+    const generatorRunCheckId: string = this.generatorRunCheckId(body, false);
     const insertInfo: string[] = [];
     const insertValues: string[] = [];
     for (const column of body.table.column) {
@@ -342,7 +341,7 @@ export class SqlGeneratorService {
       insertInfo.push(column.name);
     }
     const code: string[] = [];
-    code.push(`\t\t${result.join("")}\n`);
+    code.push(`\t\t${generatorRunCheckId}\n`);
     code.push(this.generatorRunCheckUI(body, false));
     code.push(
       templateFunctionInsert(
