@@ -144,3 +144,10 @@ export function templateCheckArrayIdFunction(
 \t\tend if;
 \t\tselect * into _result from public.create_result_json();`;
 }
+
+export function templateRunCheckArrayIdFunction(
+  table: string,
+  nameParams: string,
+) {
+  return `\n select * from ${table}_check_array_id(${nameParams})`;
+}

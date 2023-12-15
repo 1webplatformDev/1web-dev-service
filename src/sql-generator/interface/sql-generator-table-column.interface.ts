@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { SqlGeneratorErrorInterface } from "./sql-generator-error.interface";
 import { SqlGeneratorFkInterface } from "./sql-generator-fk.interface";
+import { SqlGeneratorCheckArrayInterface } from "./sql-generator-check-array.interface";
 
 export class SqlGeneratorTableColumnInterface {
   @ApiProperty()
@@ -35,4 +36,6 @@ export class SqlGeneratorTableColumnInterface {
 
   @ApiProperty()
   error404?: SqlGeneratorErrorInterface;
+  @ApiProperty()
+  checkArray?: SqlGeneratorCheckArrayInterface;
 }

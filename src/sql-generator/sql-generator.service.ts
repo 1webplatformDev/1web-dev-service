@@ -18,6 +18,7 @@ import {
   templateFunctionUIItem,
   templateParamsFunctionIdAndError,
   templateReturnFilter,
+  templateRunCheckArrayIdFunction,
   templateTable,
 } from "./template/sql-generator";
 import { ObjectPrimitive, Primitive } from "../main/type/mainType";
@@ -343,6 +344,7 @@ export class SqlGeneratorService {
     const code: string[] = [];
     code.push(`\t\t${generatorRunCheckId}\n`);
     code.push(this.generatorRunCheckUI(body, false));
+    code.push(this.generatorRunCheckArrayId(body));
     code.push(
       templateFunctionInsert(
         this.getSchemaAndTableName(body),
@@ -442,6 +444,25 @@ export class SqlGeneratorService {
       result.push(this.generatorUpdated(body));
     }
     return result;
+  }
+
+  /**
+   * Создания вызова функции проверки checkArrayId
+   */
+  private generatorRunCheckArrayId(body: SqlGeneratorDto) {
+    const isArrayColumns = body.table.column.filter((e) => e.checkArray);
+    if (!isArrayColumns.length) {
+      return "";
+    }
+
+    for (const isArrayColumn of isArrayColumns) {
+      const runFunction = templateRunCheckArrayIdFunction(
+        isArrayColumn.checkArray.tableFK,
+        isArrayColumn.checkArray.aiName,
+      );
+      console.log(runFunction);
+    }
+    return "";
   }
 
   /**
