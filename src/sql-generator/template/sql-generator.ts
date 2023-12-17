@@ -155,7 +155,7 @@ export function templateRunCheckArrayIdFunction(
 \t\tend if;\n`;
 }
 export function templateDeclareCheckArrayId() {
-  return "\n\t\terrors_text json[];\n\terror_text json;";
+  return "\n\t\terrors_text json[];\n\t\terror_text json;";
 }
 export function templateCheckErrorTextInCheckArrayId() {
   return `\n\t\tif array_length(errors_text, 1) <> 0 then
