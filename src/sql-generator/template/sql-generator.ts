@@ -147,7 +147,8 @@ export function templateCheckArrayIdFunction(
 
 export function templateRunCheckArrayIdFunction(
   table: string,
-  nameParams: string,
+  nameColumn: string,
 ) {
-  return `\n select * from ${table}_check_array_id(${nameParams})`;
+  return `\n\t\tselect _result_ids, _result into _${nameColumn}, result_
+\t\tfrom ${table}_check_array_id(_${nameColumn});\n`;
 }

@@ -342,9 +342,20 @@ export class SqlGeneratorService {
       insertInfo.push(column.name);
     }
     const code: string[] = [];
-    code.push(`\t\t${generatorRunCheckId}\n`);
-    code.push(this.generatorRunCheckUI(body, false));
-    code.push(this.generatorRunCheckArrayId(body));
+    if (generatorRunCheckId != "") {
+      code.push(`\t\t${generatorRunCheckId}\n`);
+    }
+
+    const runCheckUi = this.generatorRunCheckUI(body, false);
+    if (runCheckUi != "") {
+      code.push(runCheckUi);
+    }
+
+    const runCheckArrayId = this.generatorRunCheckArrayId(body);
+    if (runCheckArrayId != "") {
+      code.push(runCheckArrayId);
+    }
+
     code.push(
       templateFunctionInsert(
         this.getSchemaAndTableName(body),
@@ -379,6 +390,12 @@ export class SqlGeneratorService {
     const code: string[] = [];
     code.push(`\n\t\t${result.join("")}\n`);
     code.push(this.generatorRunCheckUI(body, true));
+
+    const runCheckArrayId = this.generatorRunCheckArrayId(body);
+    if (runCheckArrayId != "") {
+      code.push(runCheckArrayId);
+    }
+
     code.push(`
 \t\tupdate ${this.getSchemaAndTableName(body)}`);
     code.push(`\n\t\tset ${updateCode.join(", ")}`);
@@ -455,14 +472,19 @@ export class SqlGeneratorService {
       return "";
     }
 
+    if (isArrayColumns.length > 1) {
+      throw new Error("Обработки с несколькими проверками checkArrayId нет");
+    }
+
+    const res: string[] = [];
     for (const isArrayColumn of isArrayColumns) {
       const runFunction = templateRunCheckArrayIdFunction(
         isArrayColumn.checkArray.tableFK,
-        isArrayColumn.checkArray.aiName,
+        isArrayColumn.name,
       );
-      console.log(runFunction);
+      res.push(runFunction);
     }
-    return "";
+    return res.join("\n\n");
   }
 
   /**
