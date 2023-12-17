@@ -138,17 +138,27 @@ export function templateCheckArrayIdFunction(
   return `\n\t\tselect array_agg(${aliasTable}.${aiName}) into _result_ids from ${schemaAndTableName} ${aliasTable} where ${aliasTable}.${aiName} = any(ids_);
 \t\tselect array(select unnest(ids_) except select unnest(_result_ids)) into error_ids;
 \t\tif array_length(error_ids, 1) <> 0 then
-\t\t\tselect array(select json_build_object('name', replace(error_text, '{1}', array_to_string(error_ids, ',')))) into warning_json;
-\t\t\tselect * into _result from public.create_result_json(_warning => warning_json);
+\t\t\tselect json_build_object('name', replace(error_text_, '{1}', array_to_string(error_ids, ','))) into _result;
 \t\t\treturn;
 \t\tend if;
-\t\tselect * into _result from public.create_result_json();`;
+\t\t_result = null;`;
 }
 
 export function templateRunCheckArrayIdFunction(
   table: string,
   nameColumn: string,
 ) {
-  return `\n\t\tselect _result_ids, _result into _${nameColumn}, result_
-\t\tfrom ${table}_check_array_id(_${nameColumn});\n`;
+  return `\n\t\tselect _result_ids, _result into _${nameColumn}, error_text
+\t\tfrom ${table}_check_array_id(_${nameColumn});
+\t\tif error_text is not null then
+\t\t\terrors_text = array_append(errors_text, error_text);
+\t\tend if;\n`;
+}
+export function templateDeclareCheckArrayId() {
+  return "\n\t\terrors_text json[];\n\terror_text json;";
+}
+export function templateCheckErrorTextInCheckArrayId() {
+  return `\n\t\tif array_length(errors_text, 1) <> 0 then
+\t\t\tselect * into result_ from create_result_json(_warning => errors_text);
+\t\tend if;\n`;
 }

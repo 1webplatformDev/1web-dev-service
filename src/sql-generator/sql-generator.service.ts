@@ -3,10 +3,10 @@ import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
 import {
-  templateCheckArrayIdFunction,
+  templateCheckArrayIdFunction, templateCheckErrorTextInCheckArrayId,
   templateCheckStatus,
   templateComment,
-  templateCommentFunction,
+  templateCommentFunction, templateDeclareCheckArrayId,
   templateDeclareCheckId,
   templateFunction,
   templateFunctionCheckId,
@@ -334,6 +334,7 @@ export class SqlGeneratorService {
     const generatorRunCheckId: string = this.generatorRunCheckId(body, false);
     const insertInfo: string[] = [];
     const insertValues: string[] = [];
+    let declareFun = "";
     for (const column of body.table.column) {
       if (column.ai) {
         continue;
@@ -353,7 +354,9 @@ export class SqlGeneratorService {
 
     const runCheckArrayId = this.generatorRunCheckArrayId(body);
     if (runCheckArrayId != "") {
+      declareFun = templateDeclareCheckArrayId();
       code.push(runCheckArrayId);
+      code.push(templateCheckErrorTextInCheckArrayId());
     }
 
     code.push(
@@ -368,7 +371,7 @@ export class SqlGeneratorService {
       `${body.table.name}_insert`,
       `${this.generatorInParams(body)},\n\tout id_ int,\n\tout result_ json`,
       `\n${code.join("")}`,
-      "",
+      declareFun,
       "record",
     );
   }
@@ -379,6 +382,7 @@ export class SqlGeneratorService {
   private generatorUpdated(body: SqlGeneratorDto) {
     const ai = this.aiColumnGet(body.table.column);
     const result: string[] = [];
+    let declareFun = "";
     result.push(this.generatorRunCheckId(body, true));
     const updateCode: string[] = [];
     for (const column of body.table.column) {
@@ -393,7 +397,9 @@ export class SqlGeneratorService {
 
     const runCheckArrayId = this.generatorRunCheckArrayId(body);
     if (runCheckArrayId != "") {
+      declareFun = templateDeclareCheckArrayId();
       code.push(runCheckArrayId);
+      code.push(templateCheckErrorTextInCheckArrayId());
     }
 
     code.push(`
@@ -407,7 +413,7 @@ export class SqlGeneratorService {
         body,
       )},\n\tout result_ json`,
       code.join(""),
-      "",
+      declareFun,
       "json",
     );
   }
@@ -420,8 +426,8 @@ export class SqlGeneratorService {
     const aliasTable = this.aliasNameTable(body.table.name);
     const schemaAndTable = this.getSchemaAndTableName(body);
     const errorText = body.function.check_array_id.text_error;
-    const declare = `\n\t\terror_text varchar = '${errorText}';\n\t\terror_ids int[];\n\t\twarning_json json[];`;
-    const params = `\tids_ integer[],\n\tout _result_ids integer[],\n\tout _result json`;
+    const declare = `\n\t\terror_ids int[];`;
+    const params = `\tin ids_ integer[],\n\tin error_text_ varchar = '${errorText}',\n\tout _result_ids integer[],\n\tout _result varchar`;
     return templateFunction(
       body.schema.name,
       `${body.table.name}_check_array_id`,
@@ -470,10 +476,6 @@ export class SqlGeneratorService {
     const isArrayColumns = body.table.column.filter((e) => e.checkArray);
     if (!isArrayColumns.length) {
       return "";
-    }
-
-    if (isArrayColumns.length > 1) {
-      throw new Error("Обработки с несколькими проверками checkArrayId нет");
     }
 
     const res: string[] = [];
