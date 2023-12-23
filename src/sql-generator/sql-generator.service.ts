@@ -615,10 +615,18 @@ export class SqlGeneratorService {
     );
     const aiName = rowsAi.rows?.[0]?.column_name;
     const rows = await this.sqlService.selectTable(schema, table, aiName);
+    let idMax = null;
     for (const row of rows.rows) {
+      if (row[aiName] > idMax) {
+        idMax = row[aiName];
+      }
       result.push(this.generatorInsertOverriding(row, `${schema}.${table}`));
     }
-    result.push(``);
+    if (idMax) {
+    }
+    result.push(
+      `alter sequence ${schema}.${table}_id_seq restart with ${idMax + 1};`,
+    );
     return result.join("\n\n");
   }
 
