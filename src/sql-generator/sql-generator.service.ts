@@ -3,10 +3,12 @@ import { SqlGeneratorDto } from "./dto/sql-generator.dto";
 import { SqlGeneratorTableColumnInterface } from "./interface/sql-generator-table-column.interface";
 import { SqlGeneratorTableInterface } from "./interface/sql-generator-table.interface";
 import {
-  templateCheckArrayIdFunction, templateCheckErrorTextInCheckArrayId,
+  templateCheckArrayIdFunction,
+  templateCheckErrorTextInCheckArrayId,
   templateCheckStatus,
   templateComment,
-  templateCommentFunction, templateDeclareCheckArrayId,
+  templateCommentFunction,
+  templateDeclareCheckArrayId,
   templateDeclareCheckId,
   templateFunction,
   templateFunctionCheckId,
@@ -555,6 +557,11 @@ export class SqlGeneratorService {
         values.push(`'${dataset[key]}'`);
       } else if (dataset[key] == null) {
         values.push("null");
+      } else if (
+        typeof dataset[key] == "object" &&
+        Array.isArray(dataset[key])
+      ) {
+        values.push(`'{${dataset[key]}}'`);
       } else {
         values.push(dataset[key]);
       }
@@ -600,10 +607,18 @@ export class SqlGeneratorService {
 
   public async generatorSqlInsertDataset(schema: string, table: string) {
     const result: string[] = [];
-    const rows = await this.sqlService.selectTable(schema, table);
+    const params = `table_schema_ => '${schema}', table_name_ => '${table}'`;
+    const rowsAi = await this.sqlService.selectFunction(
+      "tec",
+      "get_column_FK",
+      params,
+    );
+    const aiName = rowsAi.rows?.[0]?.column_name;
+    const rows = await this.sqlService.selectTable(schema, table, aiName);
     for (const row of rows.rows) {
       result.push(this.generatorInsertOverriding(row, `${schema}.${table}`));
     }
+    result.push(``);
     return result.join("\n\n");
   }
 

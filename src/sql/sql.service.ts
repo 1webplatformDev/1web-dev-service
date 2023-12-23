@@ -13,9 +13,14 @@ export class SqlService {
    * функция возвращающая все данные с таблички
    * @param schema
    * @param table
+   * @param sort
    */
-  public selectTable(schema: string, table: string) {
-    return this.dbConnection.query(`select * from ${schema}.${table}`);
+  public selectTable(schema: string, table: string, sort?: string) {
+    let sql = `select * from ${schema}.${table}`;
+    if (sort) {
+      sql += ` order by ${sort}`;
+    }
+    return this.dbConnection.query(sql);
   }
 
   public functionInParams(schema: string[], entity: string) {
