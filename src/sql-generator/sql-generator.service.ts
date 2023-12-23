@@ -623,10 +623,10 @@ export class SqlGeneratorService {
       result.push(this.generatorInsertOverriding(row, `${schema}.${table}`));
     }
     if (idMax) {
+      result.push(
+        `alter sequence ${schema}.${table}_id_seq restart with ${idMax + 1};`,
+      );
     }
-    result.push(
-      `alter sequence ${schema}.${table}_id_seq restart with ${idMax + 1};`,
-    );
     return result.join("\n\n");
   }
 
