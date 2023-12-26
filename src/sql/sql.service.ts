@@ -25,9 +25,8 @@ export class SqlService {
   }
 
   public functionInParams(schema: string[], entity: string) {
-    const schemaString: string = schema.map((elem) => `'${elem}'`).join();
-    const params: string = `schema_ => array[${schemaString}], entity_ => '${entity}'`;
-    return this.selectFunction("tec", "get_fun_in_params", params);
+    const params = this.generatorParams({ schema_: schema, entity_: entity });
+    return this.selectFunction("tec", "get_fun_in_params_comment", params);
   }
 
   public selectFunction(schema: string, funName: string, params?: string) {
@@ -63,7 +62,7 @@ export class SqlService {
           result.push(`${key} => ${params[key]}`);
       }
     }
-    return result.join("");
+    return result.join(",");
   }
 
   public async functionRun(functionRunDto: FunctionRunDto) {
